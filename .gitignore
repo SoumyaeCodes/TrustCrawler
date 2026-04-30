@@ -1,0 +1,265 @@
+# =============================================================================
+# Data Scraping Assignment — .gitignore
+# =============================================================================
+# Sections:
+#   1. Secrets and environment files
+#   2. Python
+#   3. Testing and type-checker caches
+#   4. Project-specific outputs and caches
+#   5. Models and downloaded ML/NLP data
+#   6. Scraper and library runtime artifacts
+#   7. Jupyter / notebooks
+#   8. Docker
+#   9. IDE and editor files
+#  10. OS-level junk
+#  11. Logs and temp files
+#  12. Claude Code local artifacts
+# =============================================================================
+ 
+ 
+# -----------------------------------------------------------------------------
+# 1. Secrets and environment files
+# -----------------------------------------------------------------------------
+# Never commit real secrets. Only the example template is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+credentials.json
+service-account*.json
+ 
+ 
+# -----------------------------------------------------------------------------
+# 2. Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+ 
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+ 
+# Packaging / distribution
+build/
+dist/
+*.egg
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+ 
+# pip
+pip-log.txt
+pip-delete-this-directory.txt
+ 
+ 
+# -----------------------------------------------------------------------------
+# 3. Testing and type-checker caches
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.tox/
+.nox/
+.hypothesis/
+ 
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+ 
+# Linters / formatters
+.ruff_cache/
+.pylint.d/
+ 
+# Note: VCR cassettes for HTTP tests SHOULD be committed — they make tests
+# deterministic and offline-capable. Do not blanket-ignore tests/fixtures/.
+ 
+ 
+# -----------------------------------------------------------------------------
+# 4. Project-specific outputs and caches
+# -----------------------------------------------------------------------------
+# The canonical submission file IS tracked:
+#   Task 1 Multi-Source Scraper/output/scraped_data.json
+# Everything else under output/ that is regenerable noise is ignored.
+ 
+# Scraper / trust-score caches (PubMed citation lookup cache, etc.)
+Task 1 Multi-Source Scraper/output/.cache/
+Task 1 Multi-Source Scraper/output/*.tmp
+ 
+# Streamlit runtime
+.streamlit/secrets.toml
+ 
+# FastAPI / uvicorn artifacts
+.uvicorn.pid
+ 
+# Per-run debug dumps — UNCOMMENT if you want only the canonical JSON committed.
+# The spec treats these as "regenerable" so either choice is defensible.
+# Task 1 Multi-Source Scraper/output/blogs.json
+# Task 1 Multi-Source Scraper/output/youtube.json
+# Task 1 Multi-Source Scraper/output/pubmed.json
+ 
+ 
+# -----------------------------------------------------------------------------
+# 5. Models and downloaded ML/NLP data
+# -----------------------------------------------------------------------------
+# KeyBERT / sentence-transformers / spaCy / NLTK pull down weights at first run.
+# These can be hundreds of MB — never commit them.
+models/
+*.bin
+*.onnx
+*.safetensors
+*.pt
+*.pth
+*.h5
+*.ckpt
+ 
+# Local caches if downloads land inside the repo instead of ~/.cache
+nltk_data/
+.cache_huggingface/
+transformers_cache/
+sentence_transformers_cache/
+ 
+ 
+# -----------------------------------------------------------------------------
+# 6. Scraper and library runtime artifacts
+# -----------------------------------------------------------------------------
+# yt-dlp working directory (configure scrapers to write here so this rule works)
+youtube_cache/
+*.part
+*.ytdl
+ 
+# Trafilatura / newspaper3k local caches
+.trafilatura/
+.newspaper_scraper/
+ 
+# requests-cache / SQLite-backed caches
+http_cache/
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+ 
+ 
+# -----------------------------------------------------------------------------
+# 7. Jupyter / notebooks (if used for exploration)
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+ 
+ 
+# -----------------------------------------------------------------------------
+# 8. Docker
+# -----------------------------------------------------------------------------
+# Local-only override files
+docker-compose.override.yml
+docker-compose.override.yaml
+.docker/
+ 
+# Local volume mount points (if any)
+docker-data/
+ 
+ 
+# -----------------------------------------------------------------------------
+# 9. IDE and editor files
+# -----------------------------------------------------------------------------
+# VS Code — keep shared config files but ignore personal ones
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+ 
+# JetBrains (PyCharm, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+ 
+# Vim / Emacs / Sublime
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+*.sublime-workspace
+*.sublime-project
+ 
+# Cursor / Zed
+.cursor/
+.zed/
+ 
+ 
+# -----------------------------------------------------------------------------
+# 10. OS-level junk
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+ 
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+ 
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+ 
+ 
+# -----------------------------------------------------------------------------
+# 11. Logs and temp files
+# -----------------------------------------------------------------------------
+*.log
+logs/
+log/
+*.tmp
+tmp/
+temp/
+.tmp/
+ 
+# Node (only relevant if any frontend tooling sneaks in)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+ 
+ 
+# -----------------------------------------------------------------------------
+# 12. Claude Code local artifacts
+# -----------------------------------------------------------------------------
+# Project-shared Claude Code config (.claude/settings.json, .claude/commands/,
+# .claude/skills/) SHOULD be committed so the whole team gets the same setup.
+# Only personal overrides and local memory go here.
+CLAUDE.md
+.claude
+.claude/settings.local.json
+.claude.local.md
+
+
+plan.txt

@@ -1,0 +1,25 @@
+# TrustCrawler — single service, two ports, project root mounted by
+# relative path. CLAUDE.md §8 / plan.txt P8.3.
+
+services:
+  app:
+    build: .
+    image: trustcrawler:latest
+    container_name: trustcrawler
+    ports:
+      - "8000:8000"  # FastAPI (uvicorn)
+      - "8501:8501"  # Streamlit UI
+    env_file: .env
+    volumes:
+      # Relative path on purpose — keeps the file portable across machines
+      # and makes `output/` write back to the host so scraped_data.json
+      # survives container restarts.
+      - .:/app
+    # Tini reaps zombies and is a defence-in-depth: if a future change to
+    # run.sh accidentally drops the trap, tini still forwards SIGTERM.
+    init: true
+    # Catches regressions in run.sh's shutdown path — if the trap+wait-n
+    # ever stops working, docker stop will hit this 5s ceiling instead of
+    # the default 10s and the test in P8 validation will fail loudly.
+    stop_grace_period: 5s
+    restart: unless-stopped

@@ -1,0 +1,36 @@
+{
+  "scores": {
+    "tier_1": 1.0,
+    "tier_2": 0.7,
+    "tier_3": 0.4,
+    "tier_4": 0.1
+  },
+  "suffix_to_tier": {
+    ".gov": "tier_1",
+    ".edu": "tier_1"
+  },
+  "domains": {
+    "tier_1": [
+      "cdc.gov",
+      "fda.gov",
+      "nasa.gov",
+      "nature.com",
+      "ncbi.nlm.nih.gov",
+      "nih.gov",
+      "pubmed.ncbi.nlm.nih.gov",
+      "science.org",
+      "thelancet.com",
+      "who.int"
+    ],
+    "tier_2": [
+      "arxiv.org",
+      "bbc.com",
+      "nytimes.com",
+      "openai.com",
+      "reuters.com",
+      "theguardian.com",
+      "wsj.com"
+    ]
+  },
+  "_notes": "tier_3 (0.4) is the runtime default for any host not matched here or by spam_domains.txt. tier_4 (0.1) is forced when a host matches spam_domains.txt. Suffix matching is on the rightmost portion of the host, case-insensitive; suffixes win over the tier_3 default but lose to an explicit tier_4 spam match."
+}
