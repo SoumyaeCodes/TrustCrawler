@@ -1,0 +1,7 @@
+﻿kind,label,target,rationale
+blog,Wikipedia — Artificial Intelligence,https://en.wikipedia.org/wiki/Artificial_intelligence,"Non-medical AI/tech reference. Exercises the long-body chunker (>10k tokens), JSON-LD author extraction, and the .org → tier 3 domain-authority path."
+blog,CDC — Diabetes overview,https://www.cdc.gov/diabetes/about/index.html,Medical .gov source. Exercises the suffix → tier 1 domain lookup and the medical-disclaimer regex bank.
+blog,Wikipedia — Photosynthesis,https://en.wikipedia.org/wiki/Photosynthesis,Non-medical biology reference. Second Wikipedia article so the duplicate-detection hash has something to compare against on successive runs.
+youtube,3Blue1Brown — But what is a neural network?,aircAruvnKk,"Mid-channel (~5M subs), both auto and manual captions present. Exercises the transcript chunker and yt-dlp metadata path."
+youtube,TED — Sir Ken Robinson — Do schools kill creativity?,8jPQjjsBbIc,"Very high subscriber count (TED), captions in many languages. Exercises the language-cascade fallback in the transcript fetch."
+pubmed,PubMed — Arabidopsis embryos cuticle germination,34813764,"Stable PMID with an abstract, citations, and author affiliations. Exercises the citation-cache + per-author ESearch cache."
