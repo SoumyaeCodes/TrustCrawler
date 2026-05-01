@@ -1,0 +1,273 @@
+================================================================================
+TRUST SCORE CALCULATION — FLOW DIAGRAM
+Default weights (from src/trust_score/weights.py)
+================================================================================
+
+Default weights:
+    author_credibility            = 0.20
+    citation_count                = 0.15
+    domain_authority              = 0.30
+    recency                       = 0.10
+    medical_disclaimer_presence   = 0.25
+    -------------------------------------
+    SUM                           = 1.00
+
+
+================================================================================
+STEP 1 — COMPUTE EACH COMPONENT (each returns a value in [0, 1])
+================================================================================
+
+  ScrapedRaw + RawMetadata
+            │
+            ├─────────────────────────────────────────┐
+            │                                         │
+            ▼                                         ▼
+  ┌──────────────────────┐                ┌──────────────────────┐
+  │ author_credibility   │                │ citation_count       │
+  │ ──────────────────── │                │ ──────────────────── │
+  │ PubMed: 1.0 if any   │                │ PubMed:              │
+  │   author has ≥3      │                │   min(log10(1+cites) │
+  │   prior PMIDs else   │                │   /3, 1.0)           │
+  │   0.7  (mean across  │                │ Blog/YT:             │
+  │   authors)           │                │   count of outbound  │
+  │ Blog: 0.6 + 0.2 if   │                │   .gov/.edu/PubMed/  │
+  │   author bio on      │                │   DOI links;         │
+  │   same domain        │                │   min(count/10, 1.0) │
+  │ YouTube: 0.5 +       │                │                      │
+  │   0.5·min(subs/1M,1) │                │                      │
+  │ Missing author → 0.3 │                │                      │
+  │                      │                │                      │
+  │ ※ COMPONENT-LEVEL    │                │                      │
+  │   PENALTY:           │                │                      │
+  │   is_fake_author →   │                │                      │
+  │     × 0.3            │                │                      │
+  └──────────┬───────────┘                └──────────┬───────────┘
+             │                                       │
+             ▼                                       ▼
+
+  ┌──────────────────────┐                ┌──────────────────────┐
+  │ domain_authority     │                │ recency              │
+  │ ──────────────────── │                │ ──────────────────── │
+  │ Blog/PubMed:         │                │ exp(-age_days / τ)   │
+  │   tier_1 = 1.0       │                │   τ = 1825 (medical) │
+  │   tier_2 = 0.7       │                │   τ = 730  (general) │
+  │   tier_3 = 0.4       │                │ Missing date → 0.3   │
+  │   tier_4 = 0.1       │                │ Future date → 0      │
+  │   (suffix fallback,  │                │   age clamp          │
+  │   default tier_3)    │                │                      │
+  │ YouTube:             │                │                      │
+  │   verified+≥100k → 1 │                │                      │
+  │   verified         → │                │                      │
+  │     0.7              │                │                      │
+  │   unverified+≥1M → .7│                │                      │
+  │   else             → │                │                      │
+  │     0.4              │                │                      │
+  │                      │                │                      │
+  │ ※ FORCED OVERRIDE:   │                │                      │
+  │   spam_domains.txt   │                │                      │
+  │   match → 0.1        │                │                      │
+  └──────────┬───────────┘                └──────────┬───────────┘
+             │                                       │
+             ▼                                       ▼
+
+                    ┌──────────────────────┐
+                    │ medical_disclaimer_  │
+                    │ presence             │
+                    │ ──────────────────── │
+                    │ if not is_medical →  │
+                    │   1.0  (neutral —    │
+                    │   but see Step 2)    │
+                    │ if tier-1 source →   │
+                    │   1.0  (exempt)      │
+                    │ if disclaimer regex  │
+                    │   matches body →     │
+                    │   1.0                │
+                    │ else → 0.4           │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+
+
+================================================================================
+STEP 2 — DETERMINE EFFECTIVE WEIGHTS (renormalization for non-medical)
+================================================================================
+
+                  ┌────────────────────────────┐
+                  │  is_medical?               │
+                  └────┬──────────────────┬────┘
+                  YES  │                  │  NO
+                       ▼                  ▼
+            ┌──────────────────┐  ┌──────────────────────────────┐
+            │ effective_weights│  │ DROP medical_disclaimer:     │
+            │ = WEIGHTS  (un-  │  │   set its weight to 0,       │
+            │ changed; sums to │  │   rescale others by          │
+            │ 1.0)             │  │   1 / (1 - 0.25) = 1.333…    │
+            │                  │  │                              │
+            │ author    = 0.20 │  │ author    = 0.20 / 0.75 =    │
+            │ citation  = 0.15 │  │              0.267           │
+            │ domain    = 0.30 │  │ citation  = 0.15 / 0.75 =    │
+            │ recency   = 0.10 │  │              0.200           │
+            │ disclaimer= 0.25 │  │ domain    = 0.30 / 0.75 =    │
+            │                  │  │              0.400           │
+            │                  │  │ recency   = 0.10 / 0.75 =    │
+            │                  │  │              0.133           │
+            │                  │  │ disclaimer= 0.000            │
+            │                  │  │ ─────────────────────────────│
+            │                  │  │ SUM       = 1.000            │
+            └────────┬─────────┘  └────────────────┬─────────────┘
+                     │                             │
+                     └──────────────┬──────────────┘
+                                    ▼
+
+
+================================================================================
+STEP 3 — WEIGHTED SUM (aggregated)
+================================================================================
+
+  aggregated = Σ effective_weight[k] · component[k]
+
+  e.g. medical case with default weights:
+      = 0.20 · author_credibility
+      + 0.15 · citation_count
+      + 0.30 · domain_authority
+      + 0.10 · recency
+      + 0.25 · medical_disclaimer_presence
+
+
+================================================================================
+STEP 4 — POST-AGGREGATION MULTIPLIERS (chain multiplicatively)
+================================================================================
+
+  final_raw = aggregated
+
+       │
+       ▼
+  ┌────────────────────────────────────────────────────────┐
+  │ KEYWORD STUFFING                                       │
+  │ ──────────────────────────────────────────────────────│
+  │ Trigger: body_text has ≥350 words AND any single       │
+  │   non-stopword keyword exceeds 4% density.             │
+  │ Effect: final_raw × 0.7                                │
+  │ (Min-words guard prevents short transcripts from       │
+  │  false-tripping on topical word repetition.)           │
+  └────────────────────────┬───────────────────────────────┘
+                           │
+                           ▼
+  ┌────────────────────────────────────────────────────────┐
+  │ OLD-MEDICAL                                            │
+  │ ──────────────────────────────────────────────────────│
+  │ Trigger: is_medical AND age_days > 3650 (10 years)     │
+  │   AND source is NOT tier-1.                            │
+  │   - PubMed: always tier-1 (exempt).                    │
+  │   - Blog/YT host whose tier maps to tier_1: exempt.    │
+  │ Effect: final_raw × max(0.6, 1 - (age_days - 3650)     │
+  │   / 12000)                                             │
+  │   - At 3650 days → 1.0 (no penalty at threshold)       │
+  │   - Decays linearly toward 0.6 floor                   │
+  │   - Replaces the original flat 0.5× cliff so canonical │
+  │     references aren't double-penalized.                │
+  └────────────────────────┬───────────────────────────────┘
+                           │
+                           ▼
+
+  Multipliers chain: final_raw = aggregated × m1 × m2 × ...
+
+
+================================================================================
+STEP 5 — CLAMP & ROUND
+================================================================================
+
+  final = round(max(0.0, min(1.0, final_raw)), 3)
+
+
+================================================================================
+PENALTY APPLICATION ORDER (where each penalty fires)
+================================================================================
+
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  PENALTY                       WHEN APPLIED              MAGNITUDE   │
+  │ ────────────────────────────────────────────────────────────────────│
+  │  Fake author                   Step 1 (component-       × 0.3 on    │
+  │  (is_fake_author heuristic)    level, inside            author_     │
+  │                                author_credibility)      credibility │
+  │                                                                      │
+  │  Spam domain                   Step 1 (component-       sets        │
+  │  (spam_domains.txt match)      level, inside            domain_     │
+  │                                domain_authority)        authority   │
+  │                                                         to 0.1      │
+  │                                                                      │
+  │  Missing disclaimer on         Step 1 (component-       sets        │
+  │  medical content,              level, inside            medical_    │
+  │  non-tier-1                    medical_disclaimer)      disclaimer  │
+  │                                                         to 0.4      │
+  │                                                                      │
+  │  Non-medical neutralization    Step 2 (drop disclaimer  effective   │
+  │                                weight; rescale others)  weight 0    │
+  │                                                                      │
+  │  Keyword stuffing              Step 4 (post-aggreg.     × 0.7 on    │
+  │                                multiplier)              final_raw   │
+  │                                                                      │
+  │  Old-medical (non-tier-1)      Step 4 (post-aggreg.     × max(0.6,  │
+  │                                multiplier)              1 - …)      │
+  │                                                                      │
+  │  Duplicate (run-scoped)        Caller-side (main.py) —  skip score  │
+  │  (first-1000-char SHA-1)       not in orchestrator      computation │
+  └──────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+WORKED EXAMPLE — recent PubMed medical article (default weights)
+================================================================================
+
+  Input: 2-year-old peer-reviewed PubMed article, multiple authors with
+  prior publications, 50 cited-by, no disclaimer phrase (exempt as tier-1).
+
+  Components:
+      author_credibility            = 1.000
+      citation_count                = min(log10(51)/3, 1) = 0.575
+      domain_authority              = 1.000  (PubMed = tier_1)
+      recency                       = exp(-730 / 1825)    = 0.671
+      medical_disclaimer_presence   = 1.000  (tier-1 exempt)
+
+  Effective weights (is_medical = TRUE, no rescale):
+      0.20, 0.15, 0.30, 0.10, 0.25
+
+  Aggregated:
+      0.20·1.000 + 0.15·0.575 + 0.30·1.000 + 0.10·0.671 + 0.25·1.000
+    = 0.200    + 0.086     + 0.300    + 0.067    + 0.250
+    = 0.903
+
+  Post-multipliers: none (recent, not stuffed).
+
+  Final = round(0.903, 3) = 0.903
+
+
+================================================================================
+WORKED EXAMPLE — non-medical Wikipedia-style article (default weights)
+================================================================================
+
+  Input: blog-tier domain, multiple-author byline, citation-rich, but
+  JSON-LD published_date is the first-revision date (24 years ago).
+
+  Components:
+      author_credibility            = 0.600
+      citation_count                = 1.000
+      domain_authority              = 0.400  (tier_3 default)
+      recency                       = ~0.000 (exp(-8760/730) ≈ 0)
+      medical_disclaimer_presence   = 1.000  (non-medical, but DROPPED)
+
+  Effective weights (is_medical = FALSE → renormalize ÷ 0.75):
+      author    = 0.267
+      citation  = 0.200
+      domain    = 0.400
+      recency   = 0.133
+      disclaimer= 0.000
+
+  Aggregated:
+      0.267·0.600 + 0.200·1.000 + 0.400·0.400 + 0.133·0.000 + 0.000·1.000
+    = 0.160     + 0.200     + 0.160     + 0.000     + 0.000
+    = 0.520
+
+  Post-multipliers: none.
+
+  Final = round(0.520, 3) = 0.520

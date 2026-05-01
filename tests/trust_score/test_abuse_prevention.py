@@ -92,7 +92,7 @@ def test_keyword_stuffing_normal_prose_false():
 
 
 def test_keyword_stuffing_repeated_keyword_true():
-    body = "buy crypto " * 50 + "now"
+    body = "buy crypto " * 200 + "now"
     assert ap.has_keyword_stuffing(body) is True
 
 

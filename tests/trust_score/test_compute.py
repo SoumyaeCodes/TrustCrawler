@@ -154,8 +154,39 @@ def test_old_medical_applies_post_aggregation(make_raw, today):
     )
     b_medical = compute_with_breakdown(raw, {"is_medical": True}, today=today)
     b_general = compute_with_breakdown(raw, {"is_medical": False}, today=today)
-    assert b_medical.post_multipliers.get("old_medical") == 0.5
+    mult = b_medical.post_multipliers.get("old_medical")
+    # Scaled multiplier: ramps from 1.0 at the threshold toward 0.6, so
+    # 4000 days (350 days past threshold) sits just under 1.0.
+    assert mult is not None and 0.95 < mult < 1.0
     assert "old_medical" not in b_general.post_multipliers
+
+
+def test_old_medical_exempts_tier_1_sources(make_raw, today):
+    raw_pubmed = make_raw(
+        source_url="https://pubmed.ncbi.nlm.nih.gov/12345",
+        source_type="pubmed",
+        published_date=today - timedelta(days=9000),
+        topic_tags=["clinical"],
+    )
+    raw_blog_tier1 = make_raw(
+        source_url="https://nih.gov/old-guide",
+        source_type="blog",
+        published_date=today - timedelta(days=9000),
+        topic_tags=["clinical"],
+    )
+    b_pubmed = compute_with_breakdown(raw_pubmed, {"is_medical": True}, today=today)
+    b_tier1 = compute_with_breakdown(raw_blog_tier1, {"is_medical": True}, today=today)
+    assert "old_medical" not in b_pubmed.post_multipliers
+    assert "old_medical" not in b_tier1.post_multipliers
+
+
+def test_old_medical_floors_at_min_multiplier(make_raw, today):
+    raw = make_raw(
+        published_date=today - timedelta(days=20000),
+        topic_tags=["clinical"],
+    )
+    b = compute_with_breakdown(raw, {"is_medical": True}, today=today)
+    assert b.post_multipliers.get("old_medical") == 0.6
 
 
 def test_application_order_components_first_then_multipliers(make_raw, today):
@@ -166,7 +197,7 @@ def test_application_order_components_first_then_multipliers(make_raw, today):
     raw = make_raw(
         source_url="https://ehow.com/article",  # spam → tier_4 in domain_authority
         author="Dr. MD PhD",  # fake → 0.3× on author_credibility
-        published_date=today - timedelta(days=4000),
+        published_date=today - timedelta(days=9000),  # deep into the ramp
         topic_tags=["clinical"],
     )
     body = "buy stuff " * 200
@@ -182,8 +213,33 @@ def test_application_order_components_first_then_multipliers(make_raw, today):
     # Post-aggregation multipliers BOTH present.
     assert "keyword_stuffing" in b.post_multipliers
     assert "old_medical" in b.post_multipliers
-    # Final score after weighted sum × 0.7 × 0.5.
-    assert b.final < b.aggregated * 0.5  # both multipliers applied
+    # Final score after weighted sum × keyword_stuffing × old_medical.
+    expected_product = (
+        b.post_multipliers["keyword_stuffing"] * b.post_multipliers["old_medical"]
+    )
+    assert b.final <= b.aggregated * expected_product + 1e-9
+
+
+def test_non_medical_renormalizes_weights(make_raw, today):
+    """Non-medical content drops the disclaimer component and rescales
+    the remaining weights to sum to 1.0 — so the disclaimer's neutral
+    1.0 doesn't grant a free contribution.
+    """
+    raw = make_raw()
+    src_medical = compute_trust_score(raw, {"is_medical": True}, today=today)
+    src_general = compute_trust_score(raw, {"is_medical": False}, today=today)
+
+    assert (
+        src_medical.trust_score_calculation.weights["medical_disclaimer_presence"]
+        == WEIGHTS["medical_disclaimer_presence"]
+    )
+    assert src_general.trust_score_calculation.weights["medical_disclaimer_presence"] == 0.0
+    rest = 1.0 - WEIGHTS["medical_disclaimer_presence"]
+    for k, v in WEIGHTS.items():
+        if k == "medical_disclaimer_presence":
+            continue
+        assert abs(src_general.trust_score_calculation.weights[k] - v / rest) < 1e-9
+    assert abs(sum(src_general.trust_score_calculation.weights.values()) - 1.0) < 1e-9
 
 
 def test_score_always_in_unit_interval(make_raw, today):

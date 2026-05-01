@@ -140,8 +140,8 @@ trust_score = round(
 , 3)
 ```
 
-then post-aggregation multipliers (keyword stuffing 0.7×, old-medical
-0.5×) clamped to [0, 1]. Full algorithm — including the explicit 6-step
+then post-aggregation multipliers (keyword stuffing 0.7×; old-medical
+scaled 1.0→0.6 with tier-1 exemption) clamped to [0, 1]. Full algorithm — including the explicit 6-step
 application order — is in [`Task 2 Trust Score System Design/design.md`](./Task%202%20Trust%20Score%20System%20Design/design.md).
 A condensed version is in [`REPORT.md`](./REPORT.md).
 

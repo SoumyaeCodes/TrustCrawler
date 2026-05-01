@@ -13,11 +13,13 @@ that defines what counts as medical.
 from __future__ import annotations
 
 import re
+from urllib.parse import urlparse
 
 from src.schema import RawMetadata, ScrapedRaw
+from src.trust_score import abuse_prevention as ap
 
 PRESENT_SCORE: float = 1.0
-ABSENT_SCORE: float = 0.2
+ABSENT_SCORE: float = 0.4
 NON_MEDICAL_SCORE: float = 1.0  # neutral
 
 DISCLAIMER_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -54,6 +56,14 @@ def is_medical_topic(topic_tags: list[str], body: str = "") -> bool:
 def score(raw: ScrapedRaw, meta: RawMetadata) -> float:
     if not meta.get("is_medical"):
         return NON_MEDICAL_SCORE
+    # Tier-1 sources (PubMed, nih.gov, who.int, nature.com, …) are exempt:
+    # peer review / institutional authority is the implicit caveat. Without
+    # this, peer-reviewed medical literature gets penalized for the absence
+    # of a phrase ("consult your doctor") that doesn't belong in journal
+    # prose. Mirrors the tier-1 exemption on the old-medical multiplier.
+    host = urlparse(str(raw.source_url)).hostname
+    if ap.is_tier_1_source(raw.source_type, host):
+        return PRESENT_SCORE
     body = meta.get("body_text") or ""
     if any(p.search(body) for p in DISCLAIMER_PATTERNS):
         return PRESENT_SCORE

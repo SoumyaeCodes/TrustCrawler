@@ -73,7 +73,7 @@ post-aggregation multipliers:
 | `citation_count` | 0.15 | PubMed: `min(log10(1 + citations) / 3, 1.0)`. Blog/YouTube: count of outbound links to `.gov` / `.edu` / PubMed / DOI domains, normalized via `min(count / 10, 1.0)`. |
 | `domain_authority` | 0.30 | Static tier map in `data/domain_tiers.json`: tier 1 (`.gov`, `.edu`, `nih.gov`, `nature.com`, …) = 1.0; tier 2 (NYT, BBC, Reuters, …) = 0.7; tier 3 (unknown) = 0.4; tier 4 (`spam_domains.txt`) = 0.1. YouTube: derived from `channel_verified` + subscribers. |
 | `recency` | 0.10 | `exp(−age_days / τ)` where τ = 730 days (general) or 1825 days (medical). Implied half-lives are `ln(2)·τ` ≈ 506 days general, ≈ 1265 days medical. Missing date → 0.3. Future dates → clamped to `age_days = 0`. |
-| `medical_disclaimer_presence` | 0.25 | Only weighted when `meta["is_medical"]` is true (i.e., `topic_tags` ∩ medical-keyword set is non-empty). Regex bank for "consult … doctor", "not medical advice", etc. Present → 1.0; absent on medical → 0.2; non-medical → 1.0 (neutral). |
+| `medical_disclaimer_presence` | 0.25 | Only meaningful when `meta["is_medical"]` is true. Regex bank for "consult … doctor", "not medical advice", etc. Present → 1.0; absent on medical → 0.4 (softened from 0.2). **Non-medical content**: the orchestrator drops this component and rescales the other 4 weights to sum to 1.0 — otherwise the neutral 1.0 grants every non-medical article a free `weights[disclaimer]` floor. Tier-1 sources (PubMed; `nih.gov`, `who.int`, `nature.com`, …) are exempt from the absent-disclaimer penalty — peer review / institutional authority is the implicit caveat. |
 
 **Why these weights** (vs. the original equal-ish 0.25/0.20×4/0.15 split): observation against the 6 default sources showed `domain_authority` was the cleanest cross-source signal and `recency` was the noisiest (Wikipedia exposes the article's *first*-revision date in JSON-LD — a useless freshness signal for living content). `medical_disclaimer_presence` was bumped because non-medical content already gets a neutral 1.0, so a higher weight only changes scoring on medical content where it's most relevant. `citation_count` was reduced because half the batch (YouTube + the default PMID with no ELink data) can't earn the signal at all.
 
@@ -84,7 +84,7 @@ results stable):
 1. Compute every component score.
 2. Apply **component-level** multipliers — the 0.3× fake-author penalty modifies `author_credibility` before aggregation.
 3. Compute the weighted sum.
-4. Apply **post-aggregation** multipliers — keyword stuffing (0.7×) and old-medical (0.5×) chain multiplicatively.
+4. Apply **post-aggregation** multipliers — keyword stuffing (0.7×) and a *scaled* old-medical multiplier (see §6) chain multiplicatively.
 5. Clamp to [0, 1].
 6. Round to 3 decimals.
 
@@ -136,9 +136,9 @@ module import (`domain_tiers.json`, `spam_domains.txt`,
 monkeypatch the constants without touching the filesystem. Four rules:
 
 - **Fake authors**: red-flag detection (all-caps gibberish; >5 honorifics; ≥2 honorifics + ≤1 name token). Triggers a 0.3× component multiplier on `author_credibility`. `known_orgs.txt` whitelists legitimate weird-looking names ("Bill & Melinda Gates Foundation", "WHO Collaborating Centre …") so the heuristic doesn't false-positive them.
-- **SEO spam**: `spam_domains.txt` forces `domain_authority = 0.1`. Keyword density >4 % of body text triggers the 0.7× post-aggregation multiplier.
-- **Misleading medical**: medical topic without disclaimer → `medical_disclaimer_presence = 0.2` (handled component-side, no separate multiplier).
-- **Outdated medical**: `age_days > 3650` (10 years) on medical content → 0.5× post-aggregation multiplier on top of the recency decay.
+- **SEO spam**: `spam_domains.txt` forces `domain_authority = 0.1`. Keyword density > 4 % of body text triggers the 0.7× post-aggregation multiplier. The density check only runs on bodies with ≥ 350 words; below that, topical word repetition in a short transcript or snippet would false-trigger.
+- **Misleading medical**: medical topic without disclaimer → `medical_disclaimer_presence = 0.4` (softened from 0.2; handled component-side, no separate multiplier). Tier-1 sources (PubMed and tier-1 medical hosts) are exempt — the source itself is the caveat.
+- **Outdated medical**: medical content older than 10 years gets a *scaled* post-aggregation multiplier of `max(0.6, 1 - (age_days - 3650) / 12000)` — 1.0 at the threshold, ramping linearly down to a 0.6 floor. Tier-1 sources (PubMed; blog hosts mapped to tier 1, e.g. `nih.gov`, `who.int`, `nature.com`) are exempt. The earlier flat 0.5× cliff double-penalized canonical references that happen to be old; the ramp targets stale medical *advice* without flattening trust on foundational research.
 
 ---
 

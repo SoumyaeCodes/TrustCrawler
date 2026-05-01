@@ -32,7 +32,7 @@ constants in `src/trust_score/components/*.py`.
 | `citation_count` | **PubMed**: `min(log10(1 + meta["citations"]) / 3, 1.0)` (so 1k citations ≈ 1.0). **Blog/YouTube**: count outbound links to `.gov`, `.edu`, `pubmed.ncbi.nlm.nih.gov`, `ncbi.nlm.nih.gov`, `doi.org`, then `min(count / 10, 1.0)`. |
 | `domain_authority` | Static lookup against `data/domain_tiers.json` (loaded once at import). Tier 1 = 1.0, Tier 2 = 0.7, Tier 3 = 0.4 (default), Tier 4 = 0.1 (forced by `spam_domains.txt` match). Spam wins over explicit tier; explicit tier wins over suffix; suffix wins over default. **YouTube**: derived from `channel_verified` + `subs` (verified ≥100K → 1.0; verified small → 0.7; unverified ≥1M → 0.7; otherwise 0.4). |
 | `recency` | `exp(-age_days / τ)`. τ = 730 days (general) or 1825 (medical, when `meta["is_medical"]`). Implied half-lives are `ln(2)·τ` ≈ 506 days (general) and ≈ 1265 days (medical). Future dates clamp to `age = 0`. **Missing date** → 0.3. |
-| `medical_disclaimer_presence` | Only weighted when `meta["is_medical"]`. Regex bank in `src/trust_score/components/medical_disclaimer.py` matches "not medical advice", "consult [your] doctor", "for informational purposes", "diagnose, treat, cure", "seek medical advice". Match → 1.0; medical with no match → 0.2; non-medical → 1.0 (neutral). |
+| `medical_disclaimer_presence` | Only meaningful when `meta["is_medical"]`. Regex bank in `src/trust_score/components/medical_disclaimer.py` matches "not medical advice", "consult [your] doctor", "for informational purposes", "diagnose, treat, cure", "seek medical advice". Match → 1.0; medical with no match → 0.4 (softened from the original 0.2 floor). For **non-medical** content the orchestrator drops this component and rescales the remaining 4 weights to sum to 1.0 — otherwise the neutral 1.0 would grant every non-medical article a free `weights[disclaimer]` floor. **Tier-1 sources are exempt** from the absent-disclaimer penalty (PubMed always; tier-1 hosts via `is_tier_1_source`) — peer review / institutional authority is the implicit caveat. |
 
 The medical-keyword set used to compute `meta["is_medical"]` is exported
 from `medical_disclaimer.py` and consumed by scrapers — there is one
@@ -81,8 +81,8 @@ The orchestrator in `src/trust_score/compute.py` follows this exact sequence:
    owns its own pre-aggregation multipliers.
 3. **Weighted sum.** `aggregated = Σ weight[k] · component[k]`.
 4. **Post-aggregation multipliers.** Two:
-   - keyword stuffing (>4% non-stopword density) → ×0.7
-   - old-medical content (`is_medical` and `age > 3650 days`) → ×0.5
+   - keyword stuffing (>4% non-stopword density, only on bodies ≥350 words to avoid false-tripping on short transcripts) → ×0.7
+   - old-medical content (`is_medical` and `age > 3650 days`, non-tier-1 source) → scaled `max(0.6, 1 - (age_days - 3650) / 12000)`. Tier-1 hosts (PubMed, `nih.gov`, `who.int`, `nature.com`, …) are exempt so canonical references aren't double-penalized.
    Multiple multipliers compound multiplicatively.
 5. **Clamp** to `[0, 1]`.
 6. **Round** to 3 decimals.

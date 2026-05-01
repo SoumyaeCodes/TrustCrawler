@@ -135,7 +135,7 @@ def is_fake_author(author: str) -> bool:
 # ---------- Keyword-density (post-aggregation 0.7×) -----------------------
 
 KEYWORD_DENSITY_THRESHOLD: float = 0.04
-KEYWORD_DENSITY_MIN_WORDS: int = 50
+KEYWORD_DENSITY_MIN_WORDS: int = 350
 
 _WORD_RE = re.compile(r"[a-z]+")
 _MEANINGLESS = frozenset(
@@ -160,9 +160,49 @@ def has_keyword_stuffing(body: str) -> bool:
     return (max(counts.values()) / total) > KEYWORD_DENSITY_THRESHOLD
 
 
-# ---------- Old-medical (post-aggregation 0.5×) ---------------------------
+# ---------- Old-medical (scaled post-aggregation multiplier) --------------
+#
+# Replaces the original flat 0.5× cliff with two refinements:
+#   (a) tier-1 sources (PubMed, .gov, .edu, nih.gov, who.int, nature.com, …)
+#       are exempt — canonical references shouldn't be punished for age.
+#   (b) for everyone else, the multiplier ramps gracefully from 1.0 at the
+#       10-year threshold down to a 0.6 floor, instead of slamming to 0.5×
+#       the moment age crosses 3650 days.
+#
+# Intent: discourage stale medical *advice* (old blogs/videos giving
+# guidance that may have been superseded) without flattening trust on
+# foundational research that simply happens to be old.
 
 OLD_MEDICAL_AGE_DAYS: int = 3650
+OLD_MEDICAL_MIN_MULTIPLIER: float = 0.6
+OLD_MEDICAL_RAMP_DAYS: int = 12000
+
+
+def old_medical_multiplier(age_days: int) -> float:
+    """Scaled multiplier for old non-tier-1 medical content.
+
+    At `age_days == OLD_MEDICAL_AGE_DAYS` the multiplier is 1.0 (no
+    penalty at the threshold); it then decays linearly down to
+    `OLD_MEDICAL_MIN_MULTIPLIER` over `OLD_MEDICAL_RAMP_DAYS`.
+    """
+    if age_days <= OLD_MEDICAL_AGE_DAYS:
+        return 1.0
+    decayed = 1.0 - (age_days - OLD_MEDICAL_AGE_DAYS) / OLD_MEDICAL_RAMP_DAYS
+    return max(OLD_MEDICAL_MIN_MULTIPLIER, decayed)
+
+
+def is_tier_1_source(source_type: str, host: str | None) -> bool:
+    """Tier-1 exemption for the old-medical multiplier.
+
+    PubMed is always tier-1 (NCBI). For blog/youtube, defer to the
+    domain tier map: a host whose tier score equals SCORES["tier_1"] is
+    exempt.
+    """
+    if source_type == "pubmed":
+        return True
+    if not host:
+        return False
+    return domain_to_score(host) >= SCORES["tier_1"]
 
 
 # ---------- Run-scoped duplicate tracker ----------------------------------

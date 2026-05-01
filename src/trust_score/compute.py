@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from urllib.parse import urlparse
 
 from src.schema import RawMetadata, ScrapedRaw, ScrapedSource, TrustScoreCalculation
 from src.trust_score import abuse_prevention as ap
@@ -47,31 +48,61 @@ class TrustScoreBreakdown:
     final: float
 
 
+_DISCLAIMER_KEY = "medical_disclaimer_presence"
+
+
+def _effective_weights(weights: dict[str, float], is_medical: bool) -> dict[str, float]:
+    """For non-medical content, drop the disclaimer component (set its
+    weight to 0) and rescale the remaining weights to sum to 1.0.
+
+    Rationale: `medical_disclaimer.score` returns a "neutral" 1.0 for
+    non-medical content, but with a non-zero weight that 1.0 acts as a
+    free maximum-contribution floor — every non-medical article inherits
+    `weights[disclaimer]` of trust score regardless of quality. Rescaling
+    makes the score reflect only the components that actually apply.
+    """
+    if is_medical:
+        return weights
+    disc_w = weights.get(_DISCLAIMER_KEY, 0.0)
+    rest = 1.0 - disc_w
+    if rest <= 0:
+        # Degenerate: caller put 100% weight on the disclaimer for
+        # non-medical content. Falling back keeps the contract from
+        # collapsing to a divide-by-zero.
+        return weights
+    return {
+        k: 0.0 if k == _DISCLAIMER_KEY else v / rest
+        for k, v in weights.items()
+    }
+
+
 def _calc(
     raw: ScrapedRaw,
     meta: RawMetadata,
     weights: dict[str, float],
     today_eff: date,
-) -> tuple[dict[str, float], dict[str, float], float, dict[str, float], float]:
+) -> tuple[dict[str, float], dict[str, float], dict[str, float], float, dict[str, float], float]:
     """Single source of truth for the score math. Returns
-    (components, contributions, aggregated, post_multipliers, final).
-    Both compute_trust_score and compute_with_breakdown go through here.
+    (components, effective_weights, contributions, aggregated,
+    post_multipliers, final). Both compute_trust_score and
+    compute_with_breakdown go through here.
     """
     components = {
         "author_credibility": author_credibility.score(raw, meta),
         "citation_count": citation_count.score(raw, meta),
         "domain_authority": domain_authority.score(raw, meta),
         "recency": recency.score(raw, meta, today=today_eff),
-        "medical_disclaimer_presence": medical_disclaimer.score(raw, meta),
+        _DISCLAIMER_KEY: medical_disclaimer.score(raw, meta),
     }
-    contributions = {k: round(weights[k] * components[k], 6) for k in weights}
+    eff_weights = _effective_weights(weights, bool(meta.get("is_medical")))
+    contributions = {k: round(eff_weights[k] * components[k], 6) for k in eff_weights}
     aggregated = sum(contributions.values())
     multipliers = _post_multiplier(raw, meta, today_eff)
     final_raw = aggregated
     for m in multipliers.values():
         final_raw *= m
     final = round(max(0.0, min(1.0, final_raw)), 3)
-    return components, contributions, aggregated, multipliers, final
+    return components, eff_weights, contributions, aggregated, multipliers, final
 
 
 def _post_multiplier(raw: ScrapedRaw, meta: RawMetadata, today_eff: date) -> dict[str, float]:
@@ -84,7 +115,12 @@ def _post_multiplier(raw: ScrapedRaw, meta: RawMetadata, today_eff: date) -> dic
         and raw.published_date is not None
         and (today_eff - raw.published_date).days > ap.OLD_MEDICAL_AGE_DAYS
     ):
-        out["old_medical"] = 0.5
+        host = urlparse(str(raw.source_url)).hostname
+        if not ap.is_tier_1_source(raw.source_type, host):
+            age_days = (today_eff - raw.published_date).days
+            mult = ap.old_medical_multiplier(age_days)
+            if mult < 1.0:
+                out["old_medical"] = round(mult, 6)
     return out
 
 
@@ -99,12 +135,12 @@ def compute_trust_score(
     validate_weights(weights)
     today_eff = today if today is not None else date.today()
 
-    components, contributions, aggregated, multipliers, final = _calc(
+    components, eff_weights, contributions, aggregated, multipliers, final = _calc(
         raw, meta, weights, today_eff
     )
     calc = TrustScoreCalculation(
         components=components,
-        weights=dict(weights),
+        weights=eff_weights,
         contributions=contributions,
         aggregated=round(aggregated, 6),
         post_multipliers=multipliers,
@@ -131,7 +167,7 @@ def compute_with_breakdown(
     weights = WEIGHTS if weights is None else weights
     validate_weights(weights)
     today_eff = today if today is not None else date.today()
-    components, _contribs, aggregated, multipliers, final = _calc(
+    components, _eff, _contribs, aggregated, multipliers, final = _calc(
         raw, meta, weights, today_eff
     )
     return TrustScoreBreakdown(
