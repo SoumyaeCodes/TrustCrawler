@@ -107,7 +107,7 @@ python scripts/verify_defaults.py
 To run the test suite:
 
 ```bash
-pytest -v                             # 181 tests, fully offline
+pytest -v                             # 184 tests, fully offline
 ```
 
 ---
@@ -182,38 +182,87 @@ grader can audit the score without re-running the pipeline.
 
 ```
 TrustCrawler/
-├── src/                                  # All Python code lives here.
-│   ├── schema.py                         # ScrapedRaw, ScrapedSource, RawMetadata
-│   ├── api.py                            # FastAPI app — mounts the three routers
-│   ├── defaults.py                       # The 6 default sources (single source of truth)
-│   ├── scrapers/{blog,youtube,pubmed}.py
+├── src/                                       # All real Python code lives here.
+│   ├── schema.py                              # ScrapedRaw, ScrapedSource, TrustScoreCalculation, RawMetadata
+│   ├── api.py                                 # FastAPI app — path-loads the three router shims
+│   ├── defaults.py                            # DefaultSource(kind, target, label, rationale) × 6
+│   ├── errors.py                              # ScrapingError, MetadataMissingError, TrustScoreError, WeightValidationError
+│   ├── logging_config.py                      # get_logger(name) — reads LOG_LEVEL from env
+│   ├── scrapers/
+│   │   ├── blog.py                            # trafilatura + BS4 fallback + Wayback retry on 403
+│   │   ├── youtube.py                         # yt-dlp + youtube-transcript-api 1.x
+│   │   └── pubmed.py                          # Bio.Entrez + on-disk citation/author caches
 │   ├── trust_score/
-│   │   ├── compute.py                    # 6-step orchestration
-│   │   ├── weights.py                    # WEIGHTS + validate_weights
-│   │   ├── components/                   # five 0–1 scores
-│   │   └── abuse_prevention.py           # data files loaded once at import
-│   └── utils/                            # tagging, chunking, language
+│   │   ├── compute.py                         # 6-step orchestration → TrustScoreCalculation
+│   │   ├── weights.py                         # WEIGHTS + validate_weights (1.0 ± 1e-6)
+│   │   ├── abuse_prevention.py                # data files loaded ONCE at import (pure runtime)
+│   │   └── components/
+│   │       ├── author_credibility.py
+│   │       ├── citation_count.py
+│   │       ├── domain_authority.py
+│   │       ├── recency.py
+│   │       └── medical_disclaimer.py
+│   └── utils/
+│       ├── tagging.py                         # KeyBERT (primary) + YAKE (offline fallback)
+│       ├── chunking.py                        # paragraph chunker + transcript window chunker (tiktoken)
+│       └── language.py                        # langdetect wrapper with confidence threshold
 │
-├── tests/                                # 181 tests, fully offline (uses fixtures)
-├── scripts/verify_defaults.py            # confirms every default URL/PMID is reachable
+├── tests/                                     # 184 tests, fully offline (no network)
+│   ├── test_api.py                            # FastAPI route + exception-handler tests
+│   ├── test_errors.py                         # custom-exception payload tests
+│   ├── test_schema.py                         # Pydantic round-trip + validator tests
+│   ├── scrapers/
+│   │   ├── conftest.py                        # autouse fixtures (KeyBERT stub, sleep no-op)
+│   │   ├── test_blog.py                       # incl. wayback-fallback + 403-no-fallback tests
+│   │   ├── test_youtube.py                    # incl. mandatory TranscriptsDisabled test
+│   │   └── test_pubmed.py                     # incl. missing-affiliation + missing-email tests
+│   ├── trust_score/
+│   │   ├── test_compute.py                    # §6.3 edge cases + §6.4 application order
+│   │   ├── test_abuse_prevention.py           # fake-author / keyword-stuffing / dedup
+│   │   ├── test_weights.py                    # validator boundary cases
+│   │   └── components/                        # one test file per component
+│   └── utils/                                 # chunking / language / tagging
 │
-├── Task 1 Multi-Source Scraper/          # spec-mandated spaced folders
-│   ├── main.py                           # CLI "Run All" — path-loads each shim
-│   ├── ui/app.py                         # Streamlit UI
-│   ├── blog posts extractor/api.py       # FastAPI router shims (loaded by file path)
-│   ├── YouTube videos extractor/api.py
-│   ├── PubMed article extractor/api.py
-│   └── output/scraped_data.json          # canonical submission file
+├── scripts/verify_defaults.py                 # pre-submission gate — every URL 200, every PMID resolves
+│
+├── Task 1 Multi-Source Scraper/               # Spec-mandated spaced folders (presentation layer).
+│   ├── README.md                              # points at src/ for the real code
+│   ├── main.py                                # CLI "Run All" — path-loads each shim, writes 4 JSONs
+│   ├── ui/app.py                              # Streamlit UI: 4 tabs + editable Run-All plan + advanced params
+│   ├── blog posts extractor/
+│   │   ├── README.md
+│   │   └── api.py                             # FastAPI router shim → src.scrapers.blog
+│   ├── YouTube videos extractor/
+│   │   ├── README.md
+│   │   └── api.py                             # ditto for src.scrapers.youtube
+│   ├── PubMed article extractor/
+│   │   ├── README.md
+│   │   └── api.py                             # ditto for src.scrapers.pubmed
+│   └── output/
+│       ├── blogs.json                         # per-type debugging files
+│       ├── youtube.json
+│       ├── pubmed.json
+│       └── scraped_data.json                  # canonical submission artifact (concat of the three)
 │
 ├── Task 2 Trust Score System Design/
-│   ├── design.md                         # Trust-score writeup
-│   └── data/                             # domain_tiers.json, spam_domains.txt, known_orgs.txt
+│   ├── README.md                              # points at src/trust_score/
+│   ├── design.md                              # full trust-score writeup with worked examples
+│   └── data/                                  # loaded ONCE at module import in abuse_prevention.py
+│       ├── README.md                          # provenance + criteria for each list
+│       ├── domain_tiers.json                  # 4-tier authority map
+│       ├── spam_domains.txt                   # forces tier 4 + post-aggregation 0.7×
+│       └── known_orgs.txt                     # whitelist for the fake-author detector
 │
-├── Dockerfile                            # CPU-only torch + model pre-cache
-├── docker-compose.yml                    # init: true, stop_grace_period: 5s
-├── run.sh                                # trap + wait -n → docker stop in <1 s
-├── requirements.txt
-└── REPORT.md
+├── sample-results/                            # Manually curated screenshots + sample JSONs.
+├── Dockerfile                                 # CPU-only torch (~2.2 GB) + sentence-transformers + tiktoken pre-cache
+├── docker-compose.yml                         # init: true, stop_grace_period: 5s, env_file: .env
+├── run.sh                                     # trap SIGTERM/INT + wait -n → docker stop in <1 s
+├── .dockerignore                              # keeps .env / output cache / .git out of the image
+├── .env.example                               # PUBMED_EMAIL=..., USER_AGENT=..., LOG_LEVEL=...
+├── pyproject.toml                             # ruff + pytest config; src as the package
+├── requirements.txt                           # pinned dependency surface
+├── README.md
+└── REPORT.md                                  # 1–2 page short report
 ```
 
 The folders with spaces are presentation-layer shims with no
@@ -258,7 +307,7 @@ unzipping with no functional impact.
 ## 7. Running tests
 
 ```bash
-pytest -v                                  # 181 tests, all offline
+pytest -v                                  # 184 tests, all offline
 ruff check src/ tests/ scripts/ "Task 1 Multi-Source Scraper"  # lint clean
 ```
 
