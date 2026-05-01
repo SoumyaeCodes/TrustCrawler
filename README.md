@@ -159,11 +159,22 @@ Every scraped record is a `ScrapedSource` (Pydantic v2):
   "region":          "GB" | null,             // ISO 3166-1 alpha-2 if known
   "topic_tags":      ["...", "..."],
   "content_chunks":  ["...", "..."],
-  "trust_score":     0.580
+  "trust_score":     0.580,
+  "trust_score_calculation": {                // explainability — how the score was reached
+    "components":        { "author_credibility": 0.6, "citation_count": 1.0, ... },
+    "weights":           { "author_credibility": 0.25, "citation_count": 0.20, ... },
+    "contributions":     { "author_credibility": 0.15, "citation_count": 0.20, ... },
+    "aggregated":        0.580001,            // sum(contributions)
+    "post_multipliers":  { "keyword_stuffing": 0.7 },  // empty {} when none apply
+    "final":             0.580                // clamp+round of aggregated × Π multipliers
+  }
 }
 ```
 
-`output/scraped_data.json` is the canonical submission artifact.
+`output/scraped_data.json` is the canonical submission artifact. Every
+record — across `blogs.json`, `youtube.json`, `pubmed.json`, and the
+canonical `scraped_data.json` — carries `trust_score_calculation` so a
+grader can audit the score without re-running the pipeline.
 
 ---
 
@@ -232,6 +243,7 @@ unzipping with no functional impact.
 ## 6. Known limitations
 
 - **Heavy-JS blogs** — `trafilatura` does not execute JavaScript. A Playwright fallback could be added but is out of scope.
+- **Anti-bot hosts (Medium, X, LinkedIn, …)** — these fingerprint TLS handshakes and data-center IPs and 403 regardless of User-Agent. The scraper transparently retries through the Wayback Machine (`https://web.archive.org/web/2025/<url>`) for these hosts; the returned record's `source_url` is the original URL. If the Wayback snapshot is missing, the original 403 + the Wayback status code are both surfaced in the error payload.
 - **YouTube transcripts** depend on creator-uploaded or auto-generated captions; some videos have neither. The scraper falls back to the description and sets `meta["transcript_available"] = False`.
 - **`youtube-transcript-api` fragility** — depends on undocumented YouTube internals and has broken before. The pinned version range (`>=1.2.4,<2.0`) is known-working as of submission; the description fallback covers the case where YouTube changes break it.
 - **PubMed citation count** via ELink can be slow; results are cached in `output/.cache/citations_<pmid>.json` and per-author ESearch counts in `output/.cache/pubmed_authors.json`. The first `docker run` is the only slow one.

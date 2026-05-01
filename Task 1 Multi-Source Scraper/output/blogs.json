@@ -39,7 +39,33 @@
       "games",
       "tasks typically associated"
     ],
-    "trust_score": 0.58
+    "trust_score": 0.58,
+    "trust_score_calculation": {
+      "aggregated": 0.580001,
+      "components": {
+        "author_credibility": 0.6,
+        "citation_count": 1.0,
+        "domain_authority": 0.4,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 4.601900922126644e-06
+      },
+      "contributions": {
+        "author_credibility": 0.15,
+        "citation_count": 0.2,
+        "domain_authority": 0.08,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 1e-06
+      },
+      "final": 0.58,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": null,
@@ -62,7 +88,35 @@
       "cells use energy",
       "basics key points"
     ],
-    "trust_score": 0.485
+    "trust_score": 0.485,
+    "trust_score_calculation": {
+      "aggregated": 0.692375,
+      "components": {
+        "author_credibility": 0.3,
+        "citation_count": 1.0,
+        "domain_authority": 1.0,
+        "medical_disclaimer_presence": 0.2,
+        "recency": 0.9368749350494754
+      },
+      "contributions": {
+        "author_credibility": 0.075,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.03,
+        "recency": 0.187375
+      },
+      "final": 0.485,
+      "post_multipliers": {
+        "keyword_stuffing": 0.7
+      },
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": "Contributors to Wikimedia projects",
@@ -106,6 +160,32 @@
       "algae cyanobacteria convert",
       "cellulose needing use"
     ],
-    "trust_score": 0.58
+    "trust_score": 0.58,
+    "trust_score_calculation": {
+      "aggregated": 0.580001,
+      "components": {
+        "author_credibility": 0.6,
+        "citation_count": 1.0,
+        "domain_authority": 0.4,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 4.762229959444849e-06
+      },
+      "contributions": {
+        "author_credibility": 0.15,
+        "citation_count": 0.2,
+        "domain_authority": 0.08,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 1e-06
+      },
+      "final": 0.58,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   }
 ]

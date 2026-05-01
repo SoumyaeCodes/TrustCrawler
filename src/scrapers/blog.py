@@ -55,25 +55,68 @@ _CC_TO_REGION: dict[str, str] = {
     "no": "NO", "ch": "CH", "kr": "KR", "pl": "PL", "tr": "TR",
 }
 
+# Hosts that fingerprint TLS / IP rep / cookies and 403 data-center IPs
+# regardless of User-Agent. For these we transparently retry through the
+# Wayback Machine — archive.org is permitted to serve these snapshots and
+# the URL stays stable. CLAUDE.md §14 documents this as a known limit.
+_ANTIBOT_HOSTS: frozenset[str] = frozenset({
+    "medium.com",
+    "x.com",
+    "twitter.com",
+    "linkedin.com",
+})
+_WAYBACK_PREFIX: str = "https://web.archive.org/web/2025/"
+
+
+def _is_antibot_host(host: str | None) -> bool:
+    h = (host or "").lower()
+    return any(h == d or h.endswith("." + d) for d in _ANTIBOT_HOSTS)
+
+
+def _http_get(url: str, ua: str):
+    return requests.get(
+        url,
+        timeout=DEFAULT_TIMEOUT_S,
+        headers={"User-Agent": ua},
+        allow_redirects=True,
+    )
+
 
 def _fetch(url: str) -> str:
     ua = os.environ.get("USER_AGENT", DEFAULT_USER_AGENT)
     try:
-        r = requests.get(
-            url,
-            timeout=DEFAULT_TIMEOUT_S,
-            headers={"User-Agent": ua},
-            allow_redirects=True,
-        )
+        r = _http_get(url, ua)
     except requests.RequestException as e:
         raise ScrapingError(
             f"failed to fetch {url}", details={"url": url, "error": str(e)}
         ) from e
-    if r.status_code != 200:
+    if r.status_code == 200:
+        return r.text
+
+    host = (urlparse(url).hostname or "").lower()
+    if r.status_code == 403 and _is_antibot_host(host):
+        wb = f"{_WAYBACK_PREFIX}{url}"
+        log.info("blog: %s 403'd; retrying via wayback %s", url, wb)
+        try:
+            r2 = _http_get(wb, ua)
+        except requests.RequestException as e:
+            raise ScrapingError(
+                f"wayback fallback for {url} failed",
+                details={"url": url, "wayback_url": wb, "error": str(e)},
+            ) from e
+        if r2.status_code == 200:
+            return r2.text
         raise ScrapingError(
-            f"non-200 from {url}", details={"url": url, "status": r.status_code}
+            f"non-200 from {url} (wayback fallback also failed)",
+            details={
+                "url": url, "status": r.status_code,
+                "wayback_url": wb, "wayback_status": r2.status_code,
+            },
         )
-    return r.text
+
+    raise ScrapingError(
+        f"non-200 from {url}", details={"url": url, "status": r.status_code}
+    )
 
 
 def _trafilatura_extract(html: str) -> dict[str, Any]:

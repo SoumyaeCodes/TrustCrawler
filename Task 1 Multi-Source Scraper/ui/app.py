@@ -49,7 +49,12 @@ try:
 except ImportError:
     pass
 
-from src.defaults import DEFAULT_BLOGS, DEFAULT_PUBMED, DEFAULT_YOUTUBE  # noqa: E402
+from src.defaults import (  # noqa: E402
+    DEFAULT_BLOGS,
+    DEFAULT_PUBMED,
+    DEFAULT_YOUTUBE,
+    DEFAULTS,
+)
 from src.errors import WeightValidationError  # noqa: E402
 from src.scrapers import blog as blog_module  # noqa: E402
 from src.scrapers import pubmed as pubmed_module  # noqa: E402
@@ -277,47 +282,188 @@ def _pubmed_tab() -> None:
             _render_result(result, filename="pubmed_result.json")
 
 
+_SCRAPER_FOR_KIND = {
+    "blog": blog_module.scrape_blog,
+    "youtube": youtube_module.scrape_youtube,
+    "pubmed": pubmed_module.scrape_pubmed,
+}
+
+
+def _kwargs_for(kind: str, *, max_tags: int, chunk_min: int, chunk_max: int,
+                language_hint: str | None) -> dict[str, Any]:
+    """Project the global Run-All settings onto each scraper's signature.
+
+    All three scrapers accept `max_tags`. Only `blog` accepts chunk knobs;
+    only `youtube` accepts a language hint. Sending unknown kwargs would
+    crash the call, so we filter per kind.
+    """
+    if kind == "blog":
+        return {"max_tags": max_tags, "chunk_min": chunk_min, "chunk_max": chunk_max}
+    if kind == "youtube":
+        kw: dict[str, Any] = {"max_tags": max_tags}
+        if language_hint:
+            kw["language_hint"] = language_hint
+        return kw
+    if kind == "pubmed":
+        return {"max_tags": max_tags}
+    return {}
+
+
 def _run_all_tab() -> None:
     st.subheader("Run All — 6 default sources")
     st.caption(
-        "Scrapes every source listed in `src/defaults.py`, computes trust "
-        "scores, and writes `output/{blogs,youtube,pubmed,scraped_data}.json`."
+        "Scrapes every source below, computes trust scores, and writes "
+        "`output/{blogs,youtube,pubmed,scraped_data}.json`. Edit any "
+        "**target** cell to scrape a different URL/PMID — the kind, label, "
+        "and rationale columns are read-only."
     )
-    if not st.button("Run all 6", key="all_run", type="primary"):
+
+    # Pre-run editable plan ---------------------------------------------------
+    initial_rows = [
+        {
+            "kind": d.kind,
+            "label": d.label,
+            "target": d.target,
+            "rationale": d.rationale,
+        }
+        for d in DEFAULTS
+    ]
+    edited = st.data_editor(
+        initial_rows,
+        key="all_plan",
+        num_rows="fixed",
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "kind": st.column_config.TextColumn(
+                "Kind",
+                help="Which scraper handles this entry. Read-only.",
+                disabled=True,
+                width="small",
+            ),
+            "label": st.column_config.TextColumn(
+                "Label",
+                help="Human-readable name shown for this source.",
+                disabled=True,
+                width="medium",
+            ),
+            "target": st.column_config.TextColumn(
+                "Target (URL or PMID)",
+                help="What to scrape. Editable — change to point at a different source.",
+                width="large",
+                required=True,
+            ),
+            "rationale": st.column_config.TextColumn(
+                "Why this entry was picked",
+                help="Explains what code paths this entry exercises.",
+                disabled=True,
+                width="large",
+            ),
+        },
+    )
+
+    # Per-run settings — applied uniformly across all 6 sources. Each
+    # scraper only consumes the kwargs in its signature; `_kwargs_for`
+    # filters on `kind` so YouTube doesn't get `chunk_min` etc.
+    with st.expander("Advanced — parameters & trust-score weights", expanded=False):
+        st.caption(
+            "These settings apply to every source in the table above. "
+            "`chunk_min`/`chunk_max` only affect blogs; `language_hint` "
+            "only affects YouTube; `max_tags` applies to all three."
+        )
+        c1, c2, c3, c4 = st.columns(4)
+        all_max_tags = c1.number_input(
+            "max_tags", min_value=1, max_value=20, value=8, step=1, key="all_tags"
+        )
+        all_chunk_min = c2.number_input(
+            "chunk_min (blog)", min_value=50, max_value=2000, value=200, step=10,
+            key="all_cmin",
+        )
+        all_chunk_max = c3.number_input(
+            "chunk_max (blog)", min_value=100, max_value=5000, value=500, step=10,
+            key="all_cmax",
+        )
+        all_language_hint = c4.text_input(
+            "language_hint (youtube)", value="",
+            help="ISO 639-1 code, e.g. 'en', 'es'. Leave blank for auto.",
+            key="all_lang",
+        )
+        st.markdown("**Trust-score weights**")
+        all_weights, all_w_err = _weight_editor("all")
+
+    if all_w_err:
+        st.warning(all_w_err)
+
+    if not st.button(
+        "Run all",
+        key="all_run",
+        type="primary",
+        disabled=all_w_err is not None,
+    ):
         return
 
-    plan: list[tuple[str, str, Any]] = (
-        [("blog", url, blog_module.scrape_blog) for url in DEFAULT_BLOGS]
-        + [("youtube", vid, youtube_module.scrape_youtube) for vid in DEFAULT_YOUTUBE]
-        + [("pubmed", DEFAULT_PUBMED, pubmed_module.scrape_pubmed)]
-    )
+    # Execute the (possibly edited) plan -------------------------------------
+    plan: list[tuple[str, str, str]] = []
+    for row in edited:
+        kind = (row.get("kind") or "").strip()
+        target = (row.get("target") or "").strip()
+        label = (row.get("label") or "").strip()
+        if not target:
+            continue  # silently skip blank rows; data_editor doesn't add any with num_rows="fixed"
+        plan.append((kind, target, label))
+
     progress = st.progress(0.0, text="Starting…")
     status = st.empty()
+    live_rows: list[dict] = [
+        {"#": i + 1, "kind": k, "label": lbl, "target": t, "status": "queued", "trust_score": ""}
+        for i, (k, t, lbl) in enumerate(plan)
+    ]
+    live_table = st.empty()
+    live_table.dataframe(live_rows, width="stretch", hide_index=True)
+
     by_type: dict[str, list[dict]] = {"blog": [], "youtube": [], "pubmed": []}
     failures: list[dict] = []
     dedup = DuplicateTracker()
 
-    for i, (kind, target, fn) in enumerate(plan):
-        progress.progress(
-            i / len(plan),
-            text=f"({i + 1}/{len(plan)}) {kind}: {target}",
-        )
-        status.info(f"Scraping {kind}: `{target}`")
+    for i, (kind, target, label) in enumerate(plan):
+        live_rows[i]["status"] = "scraping…"
+        live_table.dataframe(live_rows, width="stretch", hide_index=True)
+        progress.progress(i / len(plan), text=f"({i + 1}/{len(plan)}) {kind}: {label}")
+        status.info(f"**{label}** — `{target}`")
+
+        fn = _SCRAPER_FOR_KIND.get(kind)
+        if fn is None:
+            failures.append({"kind": kind, "target": target, "error": f"unknown kind: {kind!r}"})
+            live_rows[i]["status"] = "✗ unknown kind"
+            continue
+
         try:
-            raw, meta = fn(target)
+            kwargs = _kwargs_for(
+                kind,
+                max_tags=int(all_max_tags),
+                chunk_min=int(all_chunk_min),
+                chunk_max=int(all_chunk_max),
+                language_hint=(all_language_hint.strip() or None),
+            )
+            raw, meta = fn(target, **kwargs)
             body = meta.get("body_text") or ""
             if dedup.is_duplicate(body):
-                status.warning(f"Skipped duplicate: {target}")
+                live_rows[i]["status"] = "⊘ duplicate"
                 failures.append({"kind": kind, "target": target, "error": "duplicate"})
                 continue
-            scored = compute_trust_score(raw, meta)
+            scored = compute_trust_score(raw, meta, weights=all_weights)
             by_type[kind].append(scored.model_dump(mode="json"))
-        except Exception as e:  # noqa: BLE001 — show errors in the UI, don't crash the tab
+            live_rows[i]["status"] = "✓ done"
+            live_rows[i]["trust_score"] = round(scored.trust_score, 3)
+        except Exception as e:  # noqa: BLE001 — surface in UI, don't crash the tab
+            live_rows[i]["status"] = "✗ failed"
             failures.append({"kind": kind, "target": target, "error": str(e)})
-            status.warning(f"{kind} `{target}` failed: {e}")
+
+        live_table.dataframe(live_rows, width="stretch", hide_index=True)
 
     progress.progress(1.0, text="Done.")
 
+    # Persist outputs ---------------------------------------------------------
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     files = {
         "blogs.json": by_type["blog"],
@@ -347,7 +493,7 @@ def _run_all_tab() -> None:
             }
             for rec in canonical
         ]
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+        st.dataframe(rows, width="stretch", hide_index=True)
         st.download_button(
             "⬇ Download scraped_data.json",
             data=json.dumps(canonical, indent=2, sort_keys=True, ensure_ascii=False),
@@ -357,7 +503,7 @@ def _run_all_tab() -> None:
 
     if failures:
         st.markdown("**Failures**")
-        st.dataframe(failures, use_container_width=True, hide_index=True)
+        st.dataframe(failures, width="stretch", hide_index=True)
 
 
 with tab_blog:

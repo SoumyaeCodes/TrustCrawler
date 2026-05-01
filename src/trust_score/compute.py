@@ -22,7 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from src.schema import RawMetadata, ScrapedRaw, ScrapedSource
+from src.schema import RawMetadata, ScrapedRaw, ScrapedSource, TrustScoreCalculation
 from src.trust_score import abuse_prevention as ap
 from src.trust_score.components import (
     author_credibility,
@@ -36,14 +36,42 @@ from src.trust_score.weights import WEIGHTS, validate_weights
 
 @dataclass(frozen=True)
 class TrustScoreBreakdown:
-    """Internal record of how a final score was reached. Useful for
-    inspection and explainability in the UI / report.
+    """Internal record of how a final score was reached. Kept for tests
+    that prefer a dataclass; the user-facing payload is the Pydantic
+    `TrustScoreCalculation` model embedded in every ScrapedSource.
     """
 
     components: dict[str, float]
     aggregated: float
     post_multipliers: dict[str, float]
     final: float
+
+
+def _calc(
+    raw: ScrapedRaw,
+    meta: RawMetadata,
+    weights: dict[str, float],
+    today_eff: date,
+) -> tuple[dict[str, float], dict[str, float], float, dict[str, float], float]:
+    """Single source of truth for the score math. Returns
+    (components, contributions, aggregated, post_multipliers, final).
+    Both compute_trust_score and compute_with_breakdown go through here.
+    """
+    components = {
+        "author_credibility": author_credibility.score(raw, meta),
+        "citation_count": citation_count.score(raw, meta),
+        "domain_authority": domain_authority.score(raw, meta),
+        "recency": recency.score(raw, meta, today=today_eff),
+        "medical_disclaimer_presence": medical_disclaimer.score(raw, meta),
+    }
+    contributions = {k: round(weights[k] * components[k], 6) for k in weights}
+    aggregated = sum(contributions.values())
+    multipliers = _post_multiplier(raw, meta, today_eff)
+    final_raw = aggregated
+    for m in multipliers.values():
+        final_raw *= m
+    final = round(max(0.0, min(1.0, final_raw)), 3)
+    return components, contributions, aggregated, multipliers, final
 
 
 def _post_multiplier(raw: ScrapedRaw, meta: RawMetadata, today_eff: date) -> dict[str, float]:
@@ -69,24 +97,24 @@ def compute_trust_score(
 ) -> ScrapedSource:
     weights = WEIGHTS if weights is None else weights
     validate_weights(weights)
-
     today_eff = today if today is not None else date.today()
 
-    components = {
-        "author_credibility": author_credibility.score(raw, meta),
-        "citation_count": citation_count.score(raw, meta),
-        "domain_authority": domain_authority.score(raw, meta),
-        "recency": recency.score(raw, meta, today=today_eff),
-        "medical_disclaimer_presence": medical_disclaimer.score(raw, meta),
-    }
-    aggregated = sum(weights[k] * components[k] for k in weights)
-    multipliers = _post_multiplier(raw, meta, today_eff)
-    final_raw = aggregated
-    for m in multipliers.values():
-        final_raw *= m
-    final = round(max(0.0, min(1.0, final_raw)), 3)
-
-    return ScrapedSource(**raw.model_dump(), trust_score=final)
+    components, contributions, aggregated, multipliers, final = _calc(
+        raw, meta, weights, today_eff
+    )
+    calc = TrustScoreCalculation(
+        components=components,
+        weights=dict(weights),
+        contributions=contributions,
+        aggregated=round(aggregated, 6),
+        post_multipliers=multipliers,
+        final=final,
+    )
+    return ScrapedSource(
+        **raw.model_dump(),
+        trust_score=final,
+        trust_score_calculation=calc,
+    )
 
 
 def compute_with_breakdown(
@@ -103,20 +131,9 @@ def compute_with_breakdown(
     weights = WEIGHTS if weights is None else weights
     validate_weights(weights)
     today_eff = today if today is not None else date.today()
-
-    components = {
-        "author_credibility": author_credibility.score(raw, meta),
-        "citation_count": citation_count.score(raw, meta),
-        "domain_authority": domain_authority.score(raw, meta),
-        "recency": recency.score(raw, meta, today=today_eff),
-        "medical_disclaimer_presence": medical_disclaimer.score(raw, meta),
-    }
-    aggregated = sum(weights[k] * components[k] for k in weights)
-    multipliers = _post_multiplier(raw, meta, today_eff)
-    final_raw = aggregated
-    for m in multipliers.values():
-        final_raw *= m
-    final = round(max(0.0, min(1.0, final_raw)), 3)
+    components, _contribs, aggregated, multipliers, final = _calc(
+        raw, meta, weights, today_eff
+    )
     return TrustScoreBreakdown(
         components=components,
         aggregated=aggregated,

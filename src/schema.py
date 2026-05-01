@@ -44,8 +44,32 @@ class ScrapedRaw(BaseModel):
         return v
 
 
+class TrustScoreCalculation(BaseModel):
+    """Explainability payload — how `trust_score` was reached.
+
+    Mirrors the 6-step application order in CLAUDE.md §6.4:
+      1. Each component score (post any component-level multipliers).
+      2. The weights used for this run (canonical defaults unless the
+         caller passed an override).
+      3. Per-component contribution = weight × component.
+      4. `aggregated` = sum(contributions).
+      5. `post_multipliers` chain on `aggregated` (empty dict when none
+         applied).
+      6. `final` = clamp(aggregated × Π post_multipliers, 0, 1) rounded
+         to 3 decimals — must equal the parent record's `trust_score`.
+    """
+
+    components: dict[str, float]
+    weights: dict[str, float]
+    contributions: dict[str, float]
+    aggregated: float
+    post_multipliers: dict[str, float]
+    final: float = Field(ge=0.0, le=1.0)
+
+
 class ScrapedSource(ScrapedRaw):
     trust_score: float = Field(ge=0.0, le=1.0)
+    trust_score_calculation: TrustScoreCalculation | None = None
 
 
 class RawMetadata(TypedDict, total=False):

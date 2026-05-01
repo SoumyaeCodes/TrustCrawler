@@ -137,6 +137,67 @@ def test_blog_uk_tld_yields_region(monkeypatch):
     assert raw.region == "GB"
 
 
+def test_blog_wayback_fallback_on_medium_403(monkeypatch):
+    # Medium fingerprints data-center IPs and 403's regardless of headers
+    # (CLAUDE.md §14). The scraper must retry through the Wayback Machine
+    # transparently so the user gets a record without changing the URL.
+    calls: list[str] = []
+
+    def fake_get(url, *a, **k):
+        calls.append(url)
+        resp = MagicMock()
+        if "web.archive.org" in url:
+            resp.status_code = 200
+            resp.text = HAPPY_HTML
+        else:
+            resp.status_code = 403
+            resp.text = ""
+        return resp
+
+    monkeypatch.setattr(blog_module.requests, "get", fake_get)
+    raw, _ = scrape_blog("https://medium.com/@author/post-id")
+
+    assert len(calls) == 2
+    assert calls[0] == "https://medium.com/@author/post-id"
+    assert calls[1].startswith("https://web.archive.org/web/2025/https://medium.com/")
+    # The record's source_url is the ORIGINAL Medium URL, not the wayback URL —
+    # the fallback is plumbing, not a content swap.
+    assert "medium.com" in str(raw.source_url)
+
+
+def test_blog_403_on_normal_host_does_not_fallback(monkeypatch):
+    # Non-antibot host gets the standard non-200 ScrapingError, no wayback retry.
+    calls: list[str] = []
+
+    def fake_get(url, *a, **k):
+        calls.append(url)
+        resp = MagicMock()
+        resp.status_code = 403
+        resp.text = ""
+        return resp
+
+    monkeypatch.setattr(blog_module.requests, "get", fake_get)
+    with pytest.raises(ScrapingError) as exc:
+        scrape_blog("https://example.com/forbidden")
+    assert exc.value.details["status"] == 403
+    assert len(calls) == 1  # no wayback retry
+
+
+def test_blog_wayback_fallback_failure_surfaces_both_statuses(monkeypatch):
+    # If the wayback retry also non-200s, the error payload reports both.
+    def fake_get(url, *a, **k):
+        resp = MagicMock()
+        resp.status_code = 403 if "web.archive.org" not in url else 503
+        resp.text = ""
+        return resp
+
+    monkeypatch.setattr(blog_module.requests, "get", fake_get)
+    with pytest.raises(ScrapingError) as exc:
+        scrape_blog("https://medium.com/@author/post-id")
+    assert exc.value.details["status"] == 403
+    assert exc.value.details["wayback_status"] == 503
+
+
 def test_blog_no_main_content_raises(monkeypatch):
     # Truly empty body so neither trafilatura nor the BS4 fallback finds text.
     _mock_get(monkeypatch, "<html><head></head><body></body></html>")

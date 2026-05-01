@@ -39,7 +39,33 @@
       "games",
       "tasks typically associated"
     ],
-    "trust_score": 0.58
+    "trust_score": 0.58,
+    "trust_score_calculation": {
+      "aggregated": 0.580001,
+      "components": {
+        "author_credibility": 0.6,
+        "citation_count": 1.0,
+        "domain_authority": 0.4,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 4.601900922126644e-06
+      },
+      "contributions": {
+        "author_credibility": 0.15,
+        "citation_count": 0.2,
+        "domain_authority": 0.08,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 1e-06
+      },
+      "final": 0.58,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": null,
@@ -62,7 +88,35 @@
       "cells use energy",
       "basics key points"
     ],
-    "trust_score": 0.485
+    "trust_score": 0.485,
+    "trust_score_calculation": {
+      "aggregated": 0.692375,
+      "components": {
+        "author_credibility": 0.3,
+        "citation_count": 1.0,
+        "domain_authority": 1.0,
+        "medical_disclaimer_presence": 0.2,
+        "recency": 0.9368749350494754
+      },
+      "contributions": {
+        "author_credibility": 0.075,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.03,
+        "recency": 0.187375
+      },
+      "final": 0.485,
+      "post_multipliers": {
+        "keyword_stuffing": 0.7
+      },
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": "Contributors to Wikimedia projects",
@@ -106,7 +160,33 @@
       "algae cyanobacteria convert",
       "cellulose needing use"
     ],
-    "trust_score": 0.58
+    "trust_score": 0.58,
+    "trust_score_calculation": {
+      "aggregated": 0.580001,
+      "components": {
+        "author_credibility": 0.6,
+        "citation_count": 1.0,
+        "domain_authority": 0.4,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 4.762229959444849e-06
+      },
+      "contributions": {
+        "author_credibility": 0.15,
+        "citation_count": 0.2,
+        "domain_authority": 0.08,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 1e-06
+      },
+      "final": 0.58,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": "3Blue1Brown",
@@ -145,7 +225,33 @@
       "help visualize doing",
       "takes grid 28x28"
     ],
-    "trust_score": 0.603
+    "trust_score": 0.603,
+    "trust_score_calculation": {
+      "aggregated": 0.602747,
+      "components": {
+        "author_credibility": 1.0,
+        "citation_count": 0.0,
+        "domain_authority": 1.0,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 0.013736878067664646
+      },
+      "contributions": {
+        "author_credibility": 0.25,
+        "citation_count": 0.0,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.002747
+      },
+      "final": 0.603,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": "TED",
@@ -179,7 +285,33 @@
       "passport suitcase desperate",
       "broke basement window"
     ],
-    "trust_score": 0.601
+    "trust_score": 0.601,
+    "trust_score_calculation": {
+      "aggregated": 0.601079,
+      "components": {
+        "author_credibility": 1.0,
+        "citation_count": 0.0,
+        "domain_authority": 1.0,
+        "medical_disclaimer_presence": 1.0,
+        "recency": 0.005396968843891398
+      },
+      "contributions": {
+        "author_credibility": 0.25,
+        "citation_count": 0.0,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.001079
+      },
+      "final": 0.601,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   },
   {
     "author": "Wolfgang Lukowitz",
@@ -201,6 +333,32 @@
       "cell giorgi",
       "sensitive outside signals"
     ],
-    "trust_score": 0.562
+    "trust_score": 0.562,
+    "trust_score_calculation": {
+      "aggregated": 0.562278,
+      "components": {
+        "author_credibility": 1.0,
+        "citation_count": 0.0,
+        "domain_authority": 1.0,
+        "medical_disclaimer_presence": 0.2,
+        "recency": 0.41138770906600464
+      },
+      "contributions": {
+        "author_credibility": 0.25,
+        "citation_count": 0.0,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.03,
+        "recency": 0.082278
+      },
+      "final": 0.562,
+      "post_multipliers": {},
+      "weights": {
+        "author_credibility": 0.25,
+        "citation_count": 0.2,
+        "domain_authority": 0.2,
+        "medical_disclaimer_presence": 0.15,
+        "recency": 0.2
+      }
+    }
   }
 ]
