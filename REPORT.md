@@ -83,10 +83,11 @@ results stable):
 
 1. Compute every component score.
 2. Apply **component-level** multipliers — the 0.3× fake-author penalty modifies `author_credibility` before aggregation.
-3. Compute the weighted sum.
-4. Apply **post-aggregation** multipliers — keyword stuffing (0.7×) and a *scaled* old-medical multiplier (see §6) chain multiplicatively.
-5. Clamp to [0, 1].
-6. Round to 3 decimals.
+3. **Resolve effective weights.** If `meta["is_medical"]` is true, weights are unchanged. Otherwise the orchestrator drops the disclaimer component (sets its weight to 0) and rescales the remaining 4 by `1 / (1 − w_disclaimer)`, so the disclaimer's neutral 1.0 doesn't grant a free contribution to non-medical content.
+4. Compute the weighted sum using the effective weights.
+5. Apply **post-aggregation** multipliers — keyword stuffing (0.7×, only on bodies ≥ 350 words) and a *scaled* old-medical multiplier (see §6) chain multiplicatively.
+6. Clamp to [0, 1].
+7. Round to 3 decimals.
 
 Weights live in `src/trust_score/weights.py` as a `WEIGHTS` constant.
 `validate_weights(w)` raises `WeightValidationError` if any weight is

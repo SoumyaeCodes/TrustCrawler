@@ -79,18 +79,25 @@ The orchestrator in `src/trust_score/compute.py` follows this exact sequence:
 2. **Component-level multipliers.** Currently: the 0.3× fake-author
    penalty applied inside `author_credibility.score()`. Each component
    owns its own pre-aggregation multipliers.
-3. **Weighted sum.** `aggregated = Σ weight[k] · component[k]`.
-4. **Post-aggregation multipliers.** Two:
+3. **Resolve effective weights.** If `meta["is_medical"]` is true,
+   weights pass through unchanged. Otherwise the orchestrator drops
+   the `medical_disclaimer_presence` component (sets its weight to 0)
+   and rescales the remaining 4 weights by `1 / (1 − w_disclaimer)` so
+   they sum to 1.0 again. Without this, the disclaimer's neutral 1.0
+   for non-medical content would grant a free `w_disclaimer` floor on
+   every non-medical score.
+4. **Weighted sum.** `aggregated = Σ effective_weight[k] · component[k]`.
+5. **Post-aggregation multipliers.** Two:
    - keyword stuffing (>4% non-stopword density, only on bodies ≥350 words to avoid false-tripping on short transcripts) → ×0.7
    - old-medical content (`is_medical` and `age > 3650 days`, non-tier-1 source) → scaled `max(0.6, 1 - (age_days - 3650) / 12000)`. Tier-1 hosts (PubMed, `nih.gov`, `who.int`, `nature.com`, …) are exempt so canonical references aren't double-penalized.
    Multiple multipliers compound multiplicatively.
-5. **Clamp** to `[0, 1]`.
-6. **Round** to 3 decimals.
+6. **Clamp** to `[0, 1]`.
+7. **Round** to 3 decimals.
 
 The order matters: applying the keyword-stuffing multiplier *before*
 component-level multipliers would let the fake-author flag and the
 spam-domain forcing both ride on top, double-counting them through
-post-aggregation. The 6-step ordering keeps each penalty in exactly one
+post-aggregation. The 7-step ordering keeps each penalty in exactly one
 place.
 
 ---
