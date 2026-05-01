@@ -39,9 +39,9 @@
       "games",
       "tasks typically associated"
     ],
-    "trust_score": 0.58,
+    "trust_score": 0.64,
     "trust_score_calculation": {
-      "aggregated": 0.580001,
+      "aggregated": 0.64,
       "components": {
         "author_credibility": 0.6,
         "citation_count": 1.0,
@@ -50,20 +50,20 @@
         "recency": 4.601900922126644e-06
       },
       "contributions": {
-        "author_credibility": 0.15,
-        "citation_count": 0.2,
-        "domain_authority": 0.08,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 1e-06
+        "author_credibility": 0.12,
+        "citation_count": 0.15,
+        "domain_authority": 0.12,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.0
       },
-      "final": 0.58,
+      "final": 0.64,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -88,9 +88,9 @@
       "cells use energy",
       "basics key points"
     ],
-    "trust_score": 0.485,
+    "trust_score": 0.458,
     "trust_score_calculation": {
-      "aggregated": 0.692375,
+      "aggregated": 0.653687,
       "components": {
         "author_credibility": 0.3,
         "citation_count": 1.0,
@@ -99,22 +99,22 @@
         "recency": 0.9368749350494754
       },
       "contributions": {
-        "author_credibility": 0.075,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.03,
-        "recency": 0.187375
+        "author_credibility": 0.06,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.05,
+        "recency": 0.093687
       },
-      "final": 0.485,
+      "final": 0.458,
       "post_multipliers": {
         "keyword_stuffing": 0.7
       },
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -160,9 +160,9 @@
       "algae cyanobacteria convert",
       "cellulose needing use"
     ],
-    "trust_score": 0.58,
+    "trust_score": 0.64,
     "trust_score_calculation": {
-      "aggregated": 0.580001,
+      "aggregated": 0.64,
       "components": {
         "author_credibility": 0.6,
         "citation_count": 1.0,
@@ -171,20 +171,20 @@
         "recency": 4.762229959444849e-06
       },
       "contributions": {
-        "author_credibility": 0.15,
-        "citation_count": 0.2,
-        "domain_authority": 0.08,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 1e-06
+        "author_credibility": 0.12,
+        "citation_count": 0.15,
+        "domain_authority": 0.12,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.0
       },
-      "final": 0.58,
+      "final": 0.64,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   }

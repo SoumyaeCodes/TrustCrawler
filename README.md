@@ -132,11 +132,11 @@ pytest -v                             # 184 tests, fully offline
 
 ```
 trust_score = round(
-    0.25 · author_credibility
-  + 0.20 · citation_count
-  + 0.20 · domain_authority
-  + 0.20 · recency
-  + 0.15 · medical_disclaimer_presence
+    0.20 · author_credibility
+  + 0.15 · citation_count
+  + 0.30 · domain_authority
+  + 0.10 · recency
+  + 0.25 · medical_disclaimer_presence
 , 3)
 ```
 
@@ -162,8 +162,8 @@ Every scraped record is a `ScrapedSource` (Pydantic v2):
   "trust_score":     0.580,
   "trust_score_calculation": {                // explainability — how the score was reached
     "components":        { "author_credibility": 0.6, "citation_count": 1.0, ... },
-    "weights":           { "author_credibility": 0.25, "citation_count": 0.20, ... },
-    "contributions":     { "author_credibility": 0.15, "citation_count": 0.20, ... },
+    "weights":           { "author_credibility": 0.20, "citation_count": 0.15, "domain_authority": 0.30, "recency": 0.10, "medical_disclaimer_presence": 0.25 },
+    "contributions":     { "author_credibility": 0.12, "citation_count": 0.15, "domain_authority": 0.12, "recency": 0.0, "medical_disclaimer_presence": 0.25 },
     "aggregated":        0.580001,            // sum(contributions)
     "post_multipliers":  { "keyword_stuffing": 0.7 },  // empty {} when none apply
     "final":             0.580                // clamp+round of aggregated × Π multipliers

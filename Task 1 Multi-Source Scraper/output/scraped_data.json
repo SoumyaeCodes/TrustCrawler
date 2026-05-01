@@ -39,9 +39,9 @@
       "games",
       "tasks typically associated"
     ],
-    "trust_score": 0.58,
+    "trust_score": 0.64,
     "trust_score_calculation": {
-      "aggregated": 0.580001,
+      "aggregated": 0.64,
       "components": {
         "author_credibility": 0.6,
         "citation_count": 1.0,
@@ -50,20 +50,20 @@
         "recency": 4.601900922126644e-06
       },
       "contributions": {
-        "author_credibility": 0.15,
-        "citation_count": 0.2,
-        "domain_authority": 0.08,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 1e-06
+        "author_credibility": 0.12,
+        "citation_count": 0.15,
+        "domain_authority": 0.12,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.0
       },
-      "final": 0.58,
+      "final": 0.64,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -88,9 +88,9 @@
       "cells use energy",
       "basics key points"
     ],
-    "trust_score": 0.485,
+    "trust_score": 0.458,
     "trust_score_calculation": {
-      "aggregated": 0.692375,
+      "aggregated": 0.653687,
       "components": {
         "author_credibility": 0.3,
         "citation_count": 1.0,
@@ -99,22 +99,22 @@
         "recency": 0.9368749350494754
       },
       "contributions": {
-        "author_credibility": 0.075,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.03,
-        "recency": 0.187375
+        "author_credibility": 0.06,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.05,
+        "recency": 0.093687
       },
-      "final": 0.485,
+      "final": 0.458,
       "post_multipliers": {
         "keyword_stuffing": 0.7
       },
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -160,9 +160,9 @@
       "algae cyanobacteria convert",
       "cellulose needing use"
     ],
-    "trust_score": 0.58,
+    "trust_score": 0.64,
     "trust_score_calculation": {
-      "aggregated": 0.580001,
+      "aggregated": 0.64,
       "components": {
         "author_credibility": 0.6,
         "citation_count": 1.0,
@@ -171,20 +171,20 @@
         "recency": 4.762229959444849e-06
       },
       "contributions": {
-        "author_credibility": 0.15,
-        "citation_count": 0.2,
-        "domain_authority": 0.08,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 1e-06
+        "author_credibility": 0.12,
+        "citation_count": 0.15,
+        "domain_authority": 0.12,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.0
       },
-      "final": 0.58,
+      "final": 0.64,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -225,9 +225,9 @@
       "help visualize doing",
       "takes grid 28x28"
     ],
-    "trust_score": 0.603,
+    "trust_score": 0.751,
     "trust_score_calculation": {
-      "aggregated": 0.602747,
+      "aggregated": 0.751374,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -236,20 +236,20 @@
         "recency": 0.013736878067664646
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.002747
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.001374
       },
-      "final": 0.603,
+      "final": 0.751,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -285,9 +285,9 @@
       "passport suitcase desperate",
       "broke basement window"
     ],
-    "trust_score": 0.601,
+    "trust_score": 0.751,
     "trust_score_calculation": {
-      "aggregated": 0.601079,
+      "aggregated": 0.75054,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -296,20 +296,20 @@
         "recency": 0.005396968843891398
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.001079
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.00054
       },
-      "final": 0.601,
+      "final": 0.751,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -333,9 +333,9 @@
       "cell giorgi",
       "sensitive outside signals"
     ],
-    "trust_score": 0.562,
+    "trust_score": 0.591,
     "trust_score_calculation": {
-      "aggregated": 0.562278,
+      "aggregated": 0.591139,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -344,20 +344,20 @@
         "recency": 0.41138770906600464
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.03,
-        "recency": 0.082278
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.05,
+        "recency": 0.041139
       },
-      "final": 0.562,
+      "final": 0.591,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   }

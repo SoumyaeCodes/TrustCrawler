@@ -69,11 +69,13 @@ post-aggregation multipliers:
 
 | Component | Default weight | Logic |
 |---|---|---|
-| `author_credibility` | 0.25 | PubMed: 1.0 if any author has ≥3 prior PubMed hits, else 0.7; Blog: 0.6 baseline + 0.2 if an author bio page exists on the same domain; YouTube: 0.5 + 0.5·min(subscribers / 1 M, 1.0). Multi-author → arithmetic mean. Missing author → 0.3. |
-| `citation_count` | 0.20 | PubMed: `min(log10(1 + citations) / 3, 1.0)`. Blog/YouTube: count of outbound links to `.gov` / `.edu` / PubMed / DOI domains, normalized via `min(count / 10, 1.0)`. |
-| `domain_authority` | 0.20 | Static tier map in `data/domain_tiers.json`: tier 1 (`.gov`, `.edu`, `nih.gov`, `nature.com`, …) = 1.0; tier 2 (NYT, BBC, Reuters, …) = 0.7; tier 3 (unknown) = 0.4; tier 4 (`spam_domains.txt`) = 0.1. YouTube: derived from `channel_verified` + subscribers. |
-| `recency` | 0.20 | `exp(−age_days / τ)` where τ = 730 days (general) or 1825 days (medical). Implied half-lives are `ln(2)·τ` ≈ 506 days general, ≈ 1265 days medical. Missing date → 0.3. Future dates → clamped to `age_days = 0`. |
-| `medical_disclaimer_presence` | 0.15 | Only weighted when `meta["is_medical"]` is true (i.e., `topic_tags` ∩ medical-keyword set is non-empty). Regex bank for "consult … doctor", "not medical advice", etc. Present → 1.0; absent on medical → 0.2; non-medical → 1.0 (neutral). |
+| `author_credibility` | 0.20 | PubMed: 1.0 if any author has ≥3 prior PubMed hits, else 0.7; Blog: 0.6 baseline + 0.2 if an author bio page exists on the same domain; YouTube: 0.5 + 0.5·min(subscribers / 1 M, 1.0). Multi-author → arithmetic mean. Missing author → 0.3. |
+| `citation_count` | 0.15 | PubMed: `min(log10(1 + citations) / 3, 1.0)`. Blog/YouTube: count of outbound links to `.gov` / `.edu` / PubMed / DOI domains, normalized via `min(count / 10, 1.0)`. |
+| `domain_authority` | 0.30 | Static tier map in `data/domain_tiers.json`: tier 1 (`.gov`, `.edu`, `nih.gov`, `nature.com`, …) = 1.0; tier 2 (NYT, BBC, Reuters, …) = 0.7; tier 3 (unknown) = 0.4; tier 4 (`spam_domains.txt`) = 0.1. YouTube: derived from `channel_verified` + subscribers. |
+| `recency` | 0.10 | `exp(−age_days / τ)` where τ = 730 days (general) or 1825 days (medical). Implied half-lives are `ln(2)·τ` ≈ 506 days general, ≈ 1265 days medical. Missing date → 0.3. Future dates → clamped to `age_days = 0`. |
+| `medical_disclaimer_presence` | 0.25 | Only weighted when `meta["is_medical"]` is true (i.e., `topic_tags` ∩ medical-keyword set is non-empty). Regex bank for "consult … doctor", "not medical advice", etc. Present → 1.0; absent on medical → 0.2; non-medical → 1.0 (neutral). |
+
+**Why these weights** (vs. the original equal-ish 0.25/0.20×4/0.15 split): observation against the 6 default sources showed `domain_authority` was the cleanest cross-source signal and `recency` was the noisiest (Wikipedia exposes the article's *first*-revision date in JSON-LD — a useless freshness signal for living content). `medical_disclaimer_presence` was bumped because non-medical content already gets a neutral 1.0, so a higher weight only changes scoring on medical content where it's most relevant. `citation_count` was reduced because half the batch (YouTube + the default PMID with no ELink data) can't earn the signal at all.
 
 **Application order** (the rule that surprised me when I worked through
 worked examples — multipliers must apply in this exact sequence to keep

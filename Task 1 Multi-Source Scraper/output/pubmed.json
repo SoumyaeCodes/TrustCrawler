@@ -19,9 +19,9 @@
       "cell giorgi",
       "sensitive outside signals"
     ],
-    "trust_score": 0.562,
+    "trust_score": 0.591,
     "trust_score_calculation": {
-      "aggregated": 0.562278,
+      "aggregated": 0.591139,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -30,20 +30,20 @@
         "recency": 0.41138770906600464
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.03,
-        "recency": 0.082278
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.05,
+        "recency": 0.041139
       },
-      "final": 0.562,
+      "final": 0.591,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   }

@@ -36,9 +36,9 @@
       "help visualize doing",
       "takes grid 28x28"
     ],
-    "trust_score": 0.603,
+    "trust_score": 0.751,
     "trust_score_calculation": {
-      "aggregated": 0.602747,
+      "aggregated": 0.751374,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -47,20 +47,20 @@
         "recency": 0.013736878067664646
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.002747
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.001374
       },
-      "final": 0.603,
+      "final": 0.751,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   },
@@ -96,9 +96,9 @@
       "passport suitcase desperate",
       "broke basement window"
     ],
-    "trust_score": 0.601,
+    "trust_score": 0.751,
     "trust_score_calculation": {
-      "aggregated": 0.601079,
+      "aggregated": 0.75054,
       "components": {
         "author_credibility": 1.0,
         "citation_count": 0.0,
@@ -107,20 +107,20 @@
         "recency": 0.005396968843891398
       },
       "contributions": {
-        "author_credibility": 0.25,
+        "author_credibility": 0.2,
         "citation_count": 0.0,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.001079
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.00054
       },
-      "final": 0.601,
+      "final": 0.751,
       "post_multipliers": {},
       "weights": {
-        "author_credibility": 0.25,
-        "citation_count": 0.2,
-        "domain_authority": 0.2,
-        "medical_disclaimer_presence": 0.15,
-        "recency": 0.2
+        "author_credibility": 0.2,
+        "citation_count": 0.15,
+        "domain_authority": 0.3,
+        "medical_disclaimer_presence": 0.25,
+        "recency": 0.1
       }
     }
   }
